@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#312e81">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Insulin">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>インスリン計算機</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#1e3a5f 100%)}
+body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',-apple-system,sans-serif;
+  display:flex;flex-direction:column;align-items:center;padding:32px 16px 60px}
+.hd{text-align:center;margin-bottom:28px;color:#fff}
+.hd-sub{font-size:11px;letter-spacing:4px;color:#a5b4fc;text-transform:uppercase;margin-bottom:6px}
+.hd h1{font-size:22px;font-weight:700;letter-spacing:1px}
+.hd-cap{margin-top:8px;font-size:11px;color:#818cf8}
+.card{width:100%;max-width:420px;background:rgba(255,255,255,.97);border-radius:20px;
+  box-shadow:0 24px 60px rgba(0,0,0,.4);overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid #e5e7eb}
+.tab{flex:1;padding:14px 0;border:none;cursor:pointer;font-size:15px;font-weight:700;
+  letter-spacing:2px;background:transparent;color:#9ca3af;border-bottom:3px solid transparent;
+  transition:all .2s;-webkit-tap-highlight-color:transparent}
+.bd{padding:24px 24px 0}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:12px;color:#6b7280;margin-bottom:6px;font-weight:600;letter-spacing:1px}
+.field input{width:100%;padding:12px 14px;border-radius:10px;font-size:18px;font-weight:600;
+  border:2px solid #e5e7eb;outline:none;color:#111827;background:#f9fafb;
+  transition:all .2s;-webkit-appearance:none;appearance:none}
+.params{display:flex;gap:8px;margin-bottom:20px;border-radius:10px;padding:10px 14px}
+.param{flex:1;text-align:center}
+.param-lbl{font-size:10px;color:#6b7280;margin-bottom:2px}
+.param-val{font-size:13px;font-weight:700}
+.btn-calc{width:100%;padding:14px;border-radius:12px;border:none;font-size:16px;font-weight:700;
+  letter-spacing:2px;cursor:pointer;color:#fff;transition:all .2s;margin-bottom:20px;
+  -webkit-tap-highlight-color:transparent}
+#result-area{display:none}
+.res{margin:0 20px 20px;border-radius:14px;padding:18px 20px;animation:fi .3s ease}
+.res-ttl{font-size:12px;font-weight:700;letter-spacing:2px;margin-bottom:14px}
+.res-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.res-lbl{font-size:13px;color:#4b5563;font-weight:500}
+.res-r{text-align:right}
+.res-int{font-size:18px;font-weight:800}
+.res-raw{font-size:11px;color:#9ca3af;margin-left:6px}
+.divider{border:none;border-top:1.5px dashed;margin:10px 0 14px}
+.tot-row{display:flex;align-items:center;justify-content:space-between}
+.tot-lbl{font-size:14px;font-weight:700;color:#374151;letter-spacing:1px}
+.tot-val{font-size:32px;font-weight:900;padding:4px 20px;border-radius:10px;letter-spacing:1px}
+.sw{padding:0 20px 20px;text-align:center}
+.btn-s{font-size:12px;color:#9ca3af;background:none;border:1px solid #e5e7eb;
+  border-radius:8px;padding:8px 20px;cursor:pointer;letter-spacing:1px;
+  -webkit-tap-highlight-color:transparent}
+#smsg{margin-top:8px;font-size:12px;color:#16a34a;font-weight:600;display:none}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;
+  align-items:center;justify-content:center;z-index:100;padding:16px}
+.overlay.show{display:flex}
+.modal{background:#fff;border-radius:20px;width:100%;max-width:400px;
+  padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.modal h2{font-size:16px;font-weight:700;color:#111827;letter-spacing:1px;margin-bottom:20px}
+.msec{margin-bottom:16px;padding:14px;border-radius:12px}
+.msec-ttl{font-size:13px;font-weight:700;margin-bottom:10px}
+.mflds{display:flex;gap:8px}
+.mfld{flex:1}
+.mfld-lbl{font-size:10px;color:#6b7280;margin-bottom:4px}
+.mfld input{width:100%;padding:8px 6px;border-radius:8px;font-size:14px;font-weight:600;
+  outline:none;text-align:center;background:#fff;-webkit-appearance:none;appearance:none}
+.mbtns{display:flex;gap:10px;margin-top:4px}
+.btn-cancel{flex:1;padding:12px;border-radius:10px;border:1.5px solid #e5e7eb;
+  background:#fff;font-size:14px;font-weight:600;cursor:pointer;color:#6b7280;
+  -webkit-tap-highlight-color:transparent}
+.btn-save{flex:2;padding:12px;border-radius:10px;border:none;background:#4f46e5;
+  font-size:14px;font-weight:700;cursor:pointer;color:#fff;letter-spacing:1px;
+  -webkit-tap-highlight-color:transparent}
+.warn{margin-top:20px;max-width:420px;font-size:11px;color:#a5b4fc;
+  text-align:center;line-height:1.7;padding:0 8px}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+input[type=number]::-webkit-inner-spin-button{opacity:.4}
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <div class="hd-sub">Insulin Dose Calculator</div>
+  <h1>インスリン投与量計算機</h1>
+  <div class="hd-cap">カーボカウント ＋ 血糖補正</div>
+</div>
+
+<div class="card">
+  <div class="tabs">
+    <button class="tab" id="tab-m" onclick="setTime('m')">朝</button>
+    <button class="tab" id="tab-n" onclick="setTime('n')">昼</button>
+    <button class="tab" id="tab-e" onclick="setTime('e')">夕</button>
+  </div>
+
+  <div class="bd">
+    <div class="field">
+      <label>糖質量（g）</label>
+      <input type="number" id="carbs" min="0" placeholder="例：60" oninput="onInput()">
+    </div>
+    <div class="field">
+      <label>現在の血糖値（mg/dL）</label>
+      <input type="number" id="bg" min="0" placeholder="例：180" oninput="onInput()">
+    </div>
+
+    <div class="params" id="params-bar">
+      <div class="param">
+        <div class="param-lbl">カーボ比</div>
+        <div class="param-val" id="pv-cr">—</div>
+      </div>
+      <div class="param">
+        <div class="param-lbl">目標血糖</div>
+        <div class="param-val" id="pv-tg">— mg/dL</div>
+      </div>
+      <div class="param">
+        <div class="param-lbl">ISF</div>
+        <div class="param-val" id="pv-isf">—</div>
+      </div>
+    </div>
+
+    <button class="btn-calc" id="btn-calc" onclick="calculate()">計　算</button>
+  </div>
+
+  <div id="result-area"></div>
+
+  <div class="sw">
+    <button class="btn-s" onclick="openEdit()">⚙ 設定を変更する</button>
+    <div id="smsg">✓ 設定を変更しました</div>
+  </div>
+</div>
+
+<div class="warn">⚠ この計算機は補助ツールです。実際の投与量は必ず主治医の指示に従ってください。</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2>⚙ 設定変更</h2>
+    <div id="mbody"></div>
+    <div class="mbtns">
+      <button class="btn-cancel" onclick="closeEdit()">キャンセル</button>
+      <button class="btn-save" onclick="saveEdit()">変更を保存する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var TIME = 'm';
+var S = {
+  carboRatio: {m:2.4, n:1.4, e:1.6},
+  targetBG:   {m:120, n:140, e:160},
+  isf:        {m:30,  n:30,  e:30}
+};
+var ACCS = {m:'#F97316', n:'#16A34A', e:'#2563EB'};
+var LTS  = {m:'#FFEDD5', n:'#DCFCE7', e:'#DBEAFE'};
+var LBLS = {m:'朝', n:'昼', e:'夕'};
+
+function setTime(t) {
+  TIME = t;
+  ['m','n','e'].forEach(function(k){
+    var el = document.getElementById('tab-'+k);
+    if(k===t){
+      el.style.background = ACCS[k];
+      el.style.color = '#fff';
+      el.style.borderBottom = '3px solid '+ACCS[k];
+    } else {
+      el.style.background = 'transparent';
+      el.style.color = '#9ca3af';
+      el.style.borderBottom = '3px solid transparent';
+    }
+  });
+  var acc = ACCS[t], lt = LTS[t];
+  document.getElementById('pv-cr').textContent  = S.carboRatio[t];
+  document.getElementById('pv-tg').textContent  = S.targetBG[t]+' mg/dL';
+  document.getElementById('pv-isf').textContent = S.isf[t];
+  document.getElementById('pv-cr').style.color  = acc;
+  document.getElementById('pv-tg').style.color  = acc;
+  document.getElementById('pv-isf').style.color = acc;
+  document.getElementById('params-bar').style.background = lt;
+  var btn = document.getElementById('btn-calc');
+  btn.style.background = acc;
+  btn.style.boxShadow  = '0 6px 20px '+acc+'88';
+  document.getElementById('result-area').innerHTML = '';
+  document.getElementById('result-area').style.display = 'none';
+}
+
+function onInput() {
+  document.getElementById('result-area').innerHTML = '';
+  document.getElementById('result-area').style.display = 'none';
+}
+
+function calculate() {
+  var cv = document.getElementById('carbs').value;
+  var bv = document.getElementById('bg').value;
+  if(!cv || !bv){ alert('糖質量と血糖値を入力してください'); return; }
+
+  var carbsNum = parseFloat(cv);
+  var bgNum    = parseFloat(bv);
+  if(isNaN(carbsNum)||isNaN(bgNum)||carbsNum<0||bgNum<0){ alert('正しい数値を入力してください'); return; }
+
+  var ratio  = S.carboRatio[TIME];
+  var target = S.targetBG[TIME];
+  var isf    = S.isf[TIME];
+  var acc    = ACCS[TIME];
+  var lt     = LTS[TIME];
+
+  var mealRaw = (carbsNum/10)*ratio;
+  var mealInt = Math.floor(mealRaw);
+
+  var corrRaw = (bgNum-target)/isf;
+  var corrInt = Math.trunc(corrRaw);
+  var total   = mealInt+corrInt;
+
+  var corrColor = corrRaw<0 ? '#6b7280' : acc;
+
+  var div = document.getElementById('result-area');
+  div.innerHTML =
+    '<div class="res" style="border:1.5px solid '+acc+'55;background:linear-gradient(135deg,'+acc+'15,'+lt+')">'
+    +'<div class="res-ttl" style="color:'+acc+'">▍計算結果</div>'
+    +'<div class="res-row">'
+    +  '<span class="res-lbl">食事インスリン</span>'
+    +  '<div class="res-r">'
+    +    '<span class="res-int" style="color:'+acc+'">'+mealInt+' 単位</span>'
+    +    '<span class="res-raw">（切り捨て前：'+mealRaw.toFixed(2)+'）</span>'
+    +  '</div>'
+    +'</div>'
+    +'<div class="res-row">'
+    +  '<span class="res-lbl">補正インスリン</span>'
+    +  '<div class="res-r">'
+    +    '<span class="res-int" style="color:'+corrColor+'">'+corrInt+' 単位</span>'
+    +    '<span class="res-raw">（切り捨て前：'+corrRaw.toFixed(2)+'）</span>'
+    +  '</div>'
+    +'</div>'
+    +'<hr class="divider" style="border-top-color:'+acc+'55">'
+    +'<div class="tot-row">'
+    +  '<span class="tot-lbl">【決定値】</span>'
+    +  '<span class="tot-val" style="color:'+acc+';background:'+acc+'18">'+total+' 単位</span>'
+    +'</div>'
+    +'</div>';
+  div.style.display = 'block';
+}
+
+function openEdit() {
+  var keys = ['m','n','e'];
+  var fields = [
+    {key:'carboRatio',lbl:'カーボ比',step:'0.1'},
+    {key:'targetBG',  lbl:'目標血糖', step:'10'},
+    {key:'isf',       lbl:'ISF',     step:'5'}
+  ];
+  var h='';
+  keys.forEach(function(k){
+    h+='<div class="msec" style="background:'+LTS[k]+';border:1px solid '+ACCS[k]+'44">'
+     +'<div class="msec-ttl" style="color:'+ACCS[k]+'">'+LBLS[k]+'食</div>'
+     +'<div class="mflds">';
+    fields.forEach(function(f){
+      h+='<div class="mfld">'
+       +'<div class="mfld-lbl">'+f.lbl+'</div>'
+       +'<input type="number" step="'+f.step+'" id="e_'+f.key+'_'+k+'"'
+       +' value="'+S[f.key][k]+'"'
+       +' style="border:1.5px solid '+ACCS[k]+'66">'
+       +'</div>';
+    });
+    h+='</div></div>';
+  });
+  document.getElementById('mbody').innerHTML = h;
+  document.getElementById('overlay').classList.add('show');
+}
+
+function closeEdit() {
+  document.getElementById('overlay').classList.remove('show');
+}
+
+function saveEdit() {
+  var keys=['m','n','e'], secs=['carboRatio','targetBG','isf'];
+  secs.forEach(function(s){
+    keys.forEach(function(k){
+      var v=parseFloat(document.getElementById('e_'+s+'_'+k).value);
+      if(!isNaN(v)) S[s][k]=v;
+    });
+  });
+  closeEdit();
+  setTime(TIME);
+  var msg=document.getElementById('smsg');
+  msg.style.display='block';
+  setTimeout(function(){msg.style.display='none';},3000);
+}
+
+// Init
+setTime('m');
+</script>
+<script>if("serviceWorker"in navigator){navigator.serviceWorker.register("./sw.js").catch(function(){});}</script>
+</body>
+</html>
